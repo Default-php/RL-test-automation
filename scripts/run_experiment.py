@@ -4,7 +4,7 @@ from pathlib import Path
 from core.agent import QLearningAgent
 from core.baseline import priority_baseline_order
 from core.environment import TestEnvironment
-from core.evaluator import evaluate_agent, evaluate_baseline
+from core.evaluator import evaluate_agent, evaluate_baseline, evaluate_random_baseline
 from core.models import TestCase
 from core.trainer import Trainer
 
@@ -33,7 +33,13 @@ def main() -> None:
         seed=seed,
     )
 
-    eval_env_baseline = TestEnvironment(
+    eval_env_priority = TestEnvironment(
+        test_cases=test_cases,
+        execution_budget=execution_budget,
+        seed=seed,
+    )
+
+    eval_env_random = TestEnvironment(
         test_cases=test_cases,
         execution_budget=execution_budget,
         seed=seed,
@@ -51,7 +57,7 @@ def main() -> None:
     trainer = Trainer(env=train_env, agent=agent)
     training_history = trainer.train(episodes=200)
 
-    baseline_order = priority_baseline_order(test_cases)
+    priority_order = priority_baseline_order(test_cases)
 
     agent_results = evaluate_agent(
         env=eval_env_agent,
@@ -59,10 +65,19 @@ def main() -> None:
         episodes=20,
     )
 
-    baseline_results = evaluate_baseline(
-        env=eval_env_baseline,
-        order=baseline_order,
+    priority_results = evaluate_baseline(
+        env=eval_env_priority,
+        order=priority_order,
         episodes=20,
+        name="priority_baseline",
+    )
+
+    random_results = evaluate_random_baseline(
+        env=eval_env_random,
+        test_cases=test_cases,
+        episodes=20,
+        seed=seed,
+        name="random_baseline",
     )
 
     print("\nTRAINING SUMMARY")
@@ -80,9 +95,19 @@ def main() -> None:
     print("-" * 40)
     print(json.dumps(agent_results, indent=2))
 
-    print("\nBASELINE RESULTS")
+    print("\nPRIORITY BASELINE RESULTS")
     print("-" * 40)
-    print(json.dumps(baseline_results, indent=2))
+    print(json.dumps(priority_results, indent=2))
+
+    print("\nRANDOM BASELINE RESULTS")
+    print("-" * 40)
+    print(json.dumps(random_results, indent=2))
+
+    print("\nSAMPLE ORDER TRACES")
+    print("-" * 40)
+    print(f"Agent sample actions: {agent_results['sample_selected_actions']}")
+    print(f"Priority sample actions: {priority_results['sample_selected_actions']}")
+    print(f"Random sample actions: {random_results['sample_selected_actions']}")
 
     output_dir = Path("outputs")
     output_dir.mkdir(exist_ok=True)
@@ -98,7 +123,8 @@ def main() -> None:
                 "execution_budget": execution_budget,
                 "seed": seed,
                 "agent": agent_results,
-                "baseline": baseline_results,
+                "priority_baseline": priority_results,
+                "random_baseline": random_results,
             },
             indent=2,
         ),

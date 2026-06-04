@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+import random
+from typing import Any, Dict, List, Optional
 
 from core.agent import QLearningAgent
 from core.environment import TestEnvironment
+from core.models import TestCase
 
 
 def _run_order_policy(env: TestEnvironment, order: List[int]) -> Dict[str, Any]:
-    state = env.reset()
+    env.reset()
     done = False
     total_reward = 0.0
     ordered_copy = list(order)
+    selected_actions: List[int] = []
+    first_failure_step: Optional[int] = None
 
     while not done:
         valid_actions = env.valid_actions()
@@ -25,8 +29,12 @@ def _run_order_policy(env: TestEnvironment, order: List[int]) -> Dict[str, Any]:
         if action is None:
             action = valid_actions[0]
 
-        state, reward, done, _info = env.step(action)
+        next_state, reward, done, info = env.step(action)
         total_reward += reward
+        selected_actions.append(action)
+
+        if info.get("failed") and first_failure_step is None:
+            first_failure_step = len(selected_actions)
 
     return {
         "total_reward": round(total_reward, 4),
@@ -36,6 +44,8 @@ def _run_order_policy(env: TestEnvironment, order: List[int]) -> Dict[str, Any]:
         "steps": env.steps,
         "remaining_budget": env.remaining_budget,
         "budget_used": env.execution_budget - env.remaining_budget,
+        "selected_actions": selected_actions,
+        "first_failure_step": first_failure_step,
     }
 
 
@@ -53,14 +63,20 @@ def evaluate_agent(
         state_key = agent.discretize_state(state)
         done = False
         total_reward = 0.0
+        selected_actions: List[int] = []
+        first_failure_step: Optional[int] = None
 
         while not done:
             valid_actions = env.valid_actions()
             action = agent.select_action(state_key, valid_actions, explore=False)
 
-            next_state, reward, done, _info = env.step(action)
+            next_state, reward, done, info = env.step(action)
             state_key = agent.discretize_state(next_state)
             total_reward += reward
+            selected_actions.append(action)
+
+            if info.get("failed") and first_failure_step is None:
+                first_failure_step = len(selected_actions)
 
         results.append(
             {
@@ -71,6 +87,8 @@ def evaluate_agent(
                 "steps": env.steps,
                 "remaining_budget": env.remaining_budget,
                 "budget_used": env.execution_budget - env.remaining_budget,
+                "selected_actions": selected_actions,
+                "first_failure_step": first_failure_step,
             }
         )
 
@@ -91,8 +109,36 @@ def evaluate_baseline(
     return _aggregate_results(name, results)
 
 
+def evaluate_random_baseline(
+    env: TestEnvironment,
+    test_cases: List[TestCase],
+    episodes: int = 20,
+    seed: Optional[int] = None,
+    name: str = "random_baseline",
+) -> Dict[str, Any]:
+    rng = random.Random(seed)
+    results = []
+
+    for _ in range(episodes):
+        order = list(range(len(test_cases)))
+        rng.shuffle(order)
+        results.append(_run_order_policy(env, order))
+
+    return _aggregate_results(name, results)
+
+
 def _aggregate_results(name: str, results: List[Dict[str, Any]]) -> Dict[str, Any]:
     count = len(results)
+    failures_in_episodes = [r for r in results if r["failures_detected"] > 0]
+    first_failure_steps = [
+        r["first_failure_step"] for r in results if r["first_failure_step"] is not None
+    ]
+
+    avg_first_failure_step = None
+    if first_failure_steps:
+        avg_first_failure_step = round(
+            sum(first_failure_steps) / len(first_failure_steps), 4
+        )
 
     return {
         "name": name,
@@ -108,4 +154,7 @@ def _aggregate_results(name: str, results: List[Dict[str, Any]]) -> Dict[str, An
             sum(r["remaining_budget"] for r in results) / count, 4
         ),
         "avg_budget_used": round(sum(r["budget_used"] for r in results) / count, 4),
+        "failure_detection_rate": round(len(failures_in_episodes) / count, 4),
+        "avg_first_failure_step": avg_first_failure_step,
+        "sample_selected_actions": results[0]["selected_actions"] if results else [],
     }
