@@ -26,3 +26,19 @@ def priority_baseline_order(test_cases: List[TestCase]) -> List[int]:
         key=lambda i: test_cases[i].priority,
         reverse=True,
     )
+
+
+def risk_baseline_order(test_cases: List[TestCase]) -> List[int]:
+    """
+    Baseline: execute tests with higher historical failure probability first.
+    Coverage and estimated time are used only as simple tie-breakers.
+    """
+    return sorted(
+        range(len(test_cases)),
+        key=lambda i: (
+            test_cases[i].failure_probability,
+            test_cases[i].coverage_gain,
+            -test_cases[i].estimated_time,
+        ),
+        reverse=True,
+    )

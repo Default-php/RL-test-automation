@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import Any, DefaultDict, Dict, List, Tuple
 import random
 
-StateKey = Tuple[int, int, int, int, int, int, int]
+StateKey = Tuple[int, int, int, int, int, int, int, int]
 
 
 class QLearningAgent:
@@ -43,6 +43,7 @@ class QLearningAgent:
         time_bin = int(float(state["time_spent"]))
         steps = int(state["steps"])
         remaining_budget = int(state["remaining_budget"])
+        executed_mask = int(state["executed_mask"])
 
         return (
             pending,
@@ -52,6 +53,7 @@ class QLearningAgent:
             time_bin,
             steps,
             remaining_budget,
+            executed_mask,
         )
 
     def select_action(

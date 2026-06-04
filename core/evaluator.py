@@ -14,6 +14,7 @@ def _run_order_policy(env: TestEnvironment, order: List[int]) -> Dict[str, Any]:
     total_reward = 0.0
     ordered_copy = list(order)
     selected_actions: List[int] = []
+    selected_tests: List[Dict[str, Any]] = []
     first_failure_step: Optional[int] = None
 
     while not done:
@@ -32,6 +33,17 @@ def _run_order_policy(env: TestEnvironment, order: List[int]) -> Dict[str, Any]:
         next_state, reward, done, info = env.step(action)
         total_reward += reward
         selected_actions.append(action)
+        test_case = info["test_case"]
+        selected_tests.append(
+            {
+                "step": len(selected_actions),
+                "action": action,
+                "id": test_case["id"],
+                "name": test_case["name"],
+                "failed": info["failed"],
+                "reward": round(reward, 4),
+            }
+        )
 
         if info.get("failed") and first_failure_step is None:
             first_failure_step = len(selected_actions)
@@ -45,6 +57,7 @@ def _run_order_policy(env: TestEnvironment, order: List[int]) -> Dict[str, Any]:
         "remaining_budget": env.remaining_budget,
         "budget_used": env.execution_budget - env.remaining_budget,
         "selected_actions": selected_actions,
+        "selected_tests": selected_tests,
         "first_failure_step": first_failure_step,
     }
 
@@ -64,6 +77,7 @@ def evaluate_agent(
         done = False
         total_reward = 0.0
         selected_actions: List[int] = []
+        selected_tests: List[Dict[str, Any]] = []
         first_failure_step: Optional[int] = None
 
         while not done:
@@ -74,6 +88,17 @@ def evaluate_agent(
             state_key = agent.discretize_state(next_state)
             total_reward += reward
             selected_actions.append(action)
+            test_case = info["test_case"]
+            selected_tests.append(
+                {
+                    "step": len(selected_actions),
+                    "action": action,
+                    "id": test_case["id"],
+                    "name": test_case["name"],
+                    "failed": info["failed"],
+                    "reward": round(reward, 4),
+                }
+            )
 
             if info.get("failed") and first_failure_step is None:
                 first_failure_step = len(selected_actions)
@@ -88,6 +113,7 @@ def evaluate_agent(
                 "remaining_budget": env.remaining_budget,
                 "budget_used": env.execution_budget - env.remaining_budget,
                 "selected_actions": selected_actions,
+                "selected_tests": selected_tests,
                 "first_failure_step": first_failure_step,
             }
         )
@@ -154,7 +180,18 @@ def _aggregate_results(name: str, results: List[Dict[str, Any]]) -> Dict[str, An
             sum(r["remaining_budget"] for r in results) / count, 4
         ),
         "avg_budget_used": round(sum(r["budget_used"] for r in results) / count, 4),
+        "avg_failures_per_budget": round(
+            sum(r["failures_detected"] for r in results)
+            / max(sum(r["budget_used"] for r in results), 1),
+            4,
+        ),
+        "avg_coverage_per_budget": round(
+            sum(r["coverage"] for r in results)
+            / max(sum(r["budget_used"] for r in results), 1),
+            4,
+        ),
         "failure_detection_rate": round(len(failures_in_episodes) / count, 4),
         "avg_first_failure_step": avg_first_failure_step,
         "sample_selected_actions": results[0]["selected_actions"] if results else [],
+        "sample_trace": results[0]["selected_tests"] if results else [],
     }

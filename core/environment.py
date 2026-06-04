@@ -43,6 +43,7 @@ class TestEnvironment:
         self.time_spent = 0.0
         self.steps = 0
         self.remaining_budget = self.execution_budget
+        self.executed_mask = 0
 
         return self._get_state()
 
@@ -58,6 +59,7 @@ class TestEnvironment:
             "time_spent": round(self.time_spent, 4),
             "steps": self.steps,
             "remaining_budget": self.remaining_budget,
+            "executed_mask": self.executed_mask,
         }
 
     def valid_actions(self) -> List[int]:
@@ -79,23 +81,26 @@ class TestEnvironment:
         # Simulate whether the test exposes a failure.
         failed = self.random.random() < test_case.failure_probability
 
-        # Reward design for prioritization:
-        # - strong reward for detecting failures
-        # - extra bonus if a failure is found earlier in the budget
-        # - reward for useful coverage
-        # - penalty for time consumption
+        # Reward design for budget-limited prioritization:
+        # - favor tests with a high expected probability of exposing failures
+        # - increase that signal when the test is selected earlier
+        # - keep smaller terms for observed failures, coverage, and execution time
         reward = 0.0
 
-        coverage_reward = test_case.coverage_gain * 10.0
-        time_penalty = test_case.estimated_time * 2.0
+        early_weight = 1.0 + (
+            (self.remaining_budget - 1) / max(self.execution_budget - 1, 1)
+        )
+        expected_failure_reward = test_case.failure_probability * 30.0 * early_weight
+        coverage_reward = test_case.coverage_gain * 6.0
+        time_penalty = test_case.estimated_time
 
+        reward += expected_failure_reward
         reward += coverage_reward
         reward -= time_penalty
 
         if failed:
-            failure_reward = 20.0
-            early_bonus = (self.remaining_budget / self.execution_budget) * 5.0
-            reward += failure_reward + early_bonus
+            observed_failure_reward = 10.0 * early_weight
+            reward += observed_failure_reward
             self.failures_detected += 1
 
         self.coverage_accumulated += test_case.coverage_gain
@@ -105,6 +110,7 @@ class TestEnvironment:
 
         self.pending_indices.remove(action)
         self.executed_indices.append(action)
+        self.executed_mask |= 1 << action
         test_case.executed = True
 
         done = self.remaining_budget <= 0 or len(self.pending_indices) == 0
@@ -113,6 +119,8 @@ class TestEnvironment:
             "test_case": asdict(test_case),
             "failed": failed,
             "remaining_budget": self.remaining_budget,
+            "reward": round(reward, 4),
+            "early_weight": round(early_weight, 4),
         }
 
         return self._get_state(), reward, done, info
