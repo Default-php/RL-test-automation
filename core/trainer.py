@@ -47,6 +47,8 @@ class Trainer:
 
             self.agent.decay_epsilon()
 
+            budget_used = self.env.execution_budget - self.env.remaining_budget
+
             history.append(
                 {
                     "episode": episode,
@@ -55,6 +57,8 @@ class Trainer:
                     "coverage": round(self.env.coverage_accumulated, 4),
                     "failures_detected": self.env.failures_detected,
                     "time_spent": round(self.env.time_spent, 4),
+                    "remaining_budget": self.env.remaining_budget,
+                    "budget_used": budget_used,
                     "epsilon": round(self.agent.epsilon, 6),
                 }
             )

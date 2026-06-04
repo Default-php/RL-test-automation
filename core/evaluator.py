@@ -34,6 +34,8 @@ def _run_order_policy(env: TestEnvironment, order: List[int]) -> Dict[str, Any]:
         "failures_detected": env.failures_detected,
         "time_spent": round(env.time_spent, 4),
         "steps": env.steps,
+        "remaining_budget": env.remaining_budget,
+        "budget_used": env.execution_budget - env.remaining_budget,
     }
 
 
@@ -67,6 +69,8 @@ def evaluate_agent(
                 "failures_detected": env.failures_detected,
                 "time_spent": env.time_spent,
                 "steps": env.steps,
+                "remaining_budget": env.remaining_budget,
+                "budget_used": env.execution_budget - env.remaining_budget,
             }
         )
 
@@ -100,4 +104,8 @@ def _aggregate_results(name: str, results: List[Dict[str, Any]]) -> Dict[str, An
         ),
         "avg_time_spent": round(sum(r["time_spent"] for r in results) / count, 4),
         "avg_steps": round(sum(r["steps"] for r in results) / count, 4),
+        "avg_remaining_budget": round(
+            sum(r["remaining_budget"] for r in results) / count, 4
+        ),
+        "avg_budget_used": round(sum(r["budget_used"] for r in results) / count, 4),
     }
