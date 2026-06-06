@@ -1,0 +1,191 @@
+{
+  "execution_budget": 3,
+  "seed": 42,
+  "agent_seed": 123,
+  "training_episodes": 2000,
+  "evaluation_episodes": 100,
+  "agent": {
+    "name": "agent",
+    "episodes": 100,
+    "avg_reward": 45.5266,
+    "avg_coverage": 0.4811,
+    "avg_failures_detected": 0.88,
+    "avg_time_spent": 4.061,
+    "avg_steps": 3.0,
+    "avg_remaining_budget": 0.0,
+    "avg_budget_used": 3.0,
+    "avg_failures_per_budget": 0.2933,
+    "avg_coverage_per_budget": 0.1604,
+    "failure_detection_rate": 0.69,
+    "avg_first_failure_step": 1.971,
+    "sample_selected_actions": [
+      0,
+      4,
+      2
+    ],
+    "sample_trace": [
+      {
+        "step": 1,
+        "action": 0,
+        "id": 1,
+        "name": "Login with valid credentials",
+        "failed": false,
+        "reward": 14.64
+      },
+      {
+        "step": 2,
+        "action": 4,
+        "id": 5,
+        "name": "Delete profile",
+        "failed": true,
+        "reward": 24.46
+      },
+      {
+        "step": 3,
+        "action": 2,
+        "id": 3,
+        "name": "Create user profile",
+        "failed": true,
+        "reward": 18.6
+      }
+    ]
+  },
+  "priority_baseline": {
+    "name": "priority_baseline",
+    "episodes": 100,
+    "avg_reward": 45.77,
+    "avg_coverage": 0.42,
+    "avg_failures_detected": 0.85,
+    "avg_time_spent": 3.6,
+    "avg_steps": 3.0,
+    "avg_remaining_budget": 0.0,
+    "avg_budget_used": 3.0,
+    "avg_failures_per_budget": 0.2833,
+    "avg_coverage_per_budget": 0.14,
+    "failure_detection_rate": 0.68,
+    "avg_first_failure_step": 1.8529,
+    "sample_selected_actions": [
+      0,
+      2,
+      1
+    ],
+    "sample_trace": [
+      {
+        "step": 1,
+        "action": 0,
+        "id": 1,
+        "name": "Login with valid credentials",
+        "failed": false,
+        "reward": 14.64
+      },
+      {
+        "step": 2,
+        "action": 2,
+        "id": 3,
+        "name": "Create user profile",
+        "failed": true,
+        "reward": 28.1
+      },
+      {
+        "step": 3,
+        "action": 1,
+        "id": 2,
+        "name": "Login with invalid password",
+        "failed": false,
+        "reward": 5.08
+      }
+    ]
+  },
+  "risk_baseline": {
+    "name": "risk_baseline",
+    "episodes": 100,
+    "avg_reward": 48.6,
+    "avg_coverage": 0.5,
+    "avg_failures_detected": 0.9,
+    "avg_time_spent": 4.2,
+    "avg_steps": 3.0,
+    "avg_remaining_budget": 0.0,
+    "avg_budget_used": 3.0,
+    "avg_failures_per_budget": 0.3,
+    "avg_coverage_per_budget": 0.1667,
+    "failure_detection_rate": 0.71,
+    "avg_first_failure_step": 1.7606,
+    "sample_selected_actions": [
+      2,
+      0,
+      4
+    ],
+    "sample_trace": [
+      {
+        "step": 1,
+        "action": 2,
+        "id": 3,
+        "name": "Create user profile",
+        "failed": false,
+        "reward": 17.6
+      },
+      {
+        "step": 2,
+        "action": 0,
+        "id": 1,
+        "name": "Login with valid credentials",
+        "failed": true,
+        "reward": 25.89
+      },
+      {
+        "step": 3,
+        "action": 4,
+        "id": 5,
+        "name": "Delete profile",
+        "failed": false,
+        "reward": 6.16
+      }
+    ]
+  },
+  "random_baseline": {
+    "name": "random_baseline",
+    "episodes": 100,
+    "avg_reward": 35.339,
+    "avg_coverage": 0.3935,
+    "avg_failures_detected": 0.65,
+    "avg_time_spent": 3.527,
+    "avg_steps": 3.0,
+    "avg_remaining_budget": 0.0,
+    "avg_budget_used": 3.0,
+    "avg_failures_per_budget": 0.2167,
+    "avg_coverage_per_budget": 0.1312,
+    "failure_detection_rate": 0.56,
+    "avg_first_failure_step": 2.1071,
+    "sample_selected_actions": [
+      3,
+      1,
+      2
+    ],
+    "sample_trace": [
+      {
+        "step": 1,
+        "action": 3,
+        "id": 4,
+        "name": "Edit profile data",
+        "failed": false,
+        "reward": 6.76
+      },
+      {
+        "step": 2,
+        "action": 1,
+        "id": 2,
+        "name": "Login with invalid password",
+        "failed": true,
+        "reward": 22.78
+      },
+      {
+        "step": 3,
+        "action": 2,
+        "id": 3,
+        "name": "Create user profile",
+        "failed": true,
+        "reward": 18.6
+      }
+    ]
+  }
+}
