@@ -10,6 +10,7 @@ El proyecto se plantea como una aproximación académica al problema de test cas
 - Entrenar un agente de Q-learning tabular para seleccionar pruebas bajo restricciones de presupuesto.
 - Comparar el desempeño del agente contra estrategias base: prioridad funcional, riesgo histórico y selección aleatoria.
 - Registrar métricas cuantitativas que permitan analizar recompensa promedio, cobertura, detección de fallas y eficiencia por presupuesto.
+- Proveer una interfaz web ligera que permita cargar conjuntos de prueba, ejecutar el motor y descargar un reporte de resultados.
 
 ## Estructura del repositorio
 
@@ -34,6 +35,19 @@ scripts/
 
 src/
   run_experiment.py  Punto de entrada principal para ejecutar experimentos.
+
+test_prioritizer/
+  settings.py  Configuración principal del proyecto Django.
+  urls.py      Enrutamiento global de la aplicación web.
+
+web/
+  forms.py      Formulario de carga y selección de datasets.
+  services.py   Capa de orquestación entre Django y el motor de aprendizaje por refuerzo.
+  views.py      Vistas para entrada, resultados y descarga de reportes.
+  templates/    Vistas HTML renderizadas con Django Templates.
+
+manage.py         Utilidad de administración de Django.
+requirements.txt  Dependencias mínimas del proyecto.
 ```
 
 ## Metodología
@@ -65,6 +79,35 @@ Parámetros principales:
 - `--execution-budget`: cantidad máxima de pruebas por episodio.
 - `--seed`: semilla del entorno y de las líneas base reproducibles.
 - `--agent-seed`: semilla específica del agente Q-learning.
+
+## Interfaz web Django
+
+El proyecto incluye una capa de producto implementada con Django. Esta interfaz permite seleccionar un dataset incluido en `data/`, cargar un archivo JSON externo, validar la estructura del dataset, ejecutar el motor de priorización, visualizar la recomendación de orden de ejecución y comparar los resultados contra las líneas base disponibles.
+
+Instalación de dependencias en Windows PowerShell:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python -m pip install -r requirements.txt
+.\.venv\Scripts\python manage.py runserver
+```
+
+Ejecución equivalente desde Git Bash:
+
+```bash
+python -m venv .venv
+source .venv/Scripts/activate
+python -m pip install -r requirements.txt
+python manage.py runserver
+```
+
+Una vez iniciado el servidor, la aplicación queda disponible en:
+
+```text
+http://127.0.0.1:8000/
+```
+
+La interfaz web genera reportes JSON descargables en `outputs/web_reports/`. Este directorio se considera salida de ejecución y no forma parte del código fuente principal.
 
 ## Resultados experimentales
 

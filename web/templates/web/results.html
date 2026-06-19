@@ -1,0 +1,127 @@
+{% extends "web/base.html" %}
+
+{% block title %}Results | RL Test Prioritizer{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="h4 mb-1">Prioritization results</h1>
+      <div class="text-secondary">{{ report.dataset_name }} · {{ report.test_case_count }} test cases</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'web:home' %}">New run</a>
+      <a class="btn btn-primary" href="{% url 'web:download_report' report.report_id %}">Download JSON</a>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="metric-card">
+        <div class="metric-label">Agent reward</div>
+        <div class="metric-value">{{ report.evaluation_results.agent.avg_reward }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="metric-card">
+        <div class="metric-label">Agent coverage</div>
+        <div class="metric-value">{{ report.evaluation_results.agent.avg_coverage }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="metric-card">
+        <div class="metric-label">Failure detection rate</div>
+        <div class="metric-value">{{ report.evaluation_results.agent.failure_detection_rate }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="metric-card">
+        <div class="metric-label">Budget used</div>
+        <div class="metric-value">{{ report.evaluation_results.agent.avg_budget_used }}</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="surface mb-4">
+    <h2 class="h5 mb-3">Recommended execution order</h2>
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th scope="col">Position</th>
+            <th scope="col">Test ID</th>
+            <th scope="col">Name</th>
+            <th scope="col">Action</th>
+            <th scope="col">Observed failure</th>
+            <th scope="col">Reward</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in report.recommended_order %}
+            <tr>
+              <td>{{ item.position }}</td>
+              <td>{{ item.test_id }}</td>
+              <td>{{ item.name }}</td>
+              <td>{{ item.action }}</td>
+              <td>{% if item.observed_failure %}Yes{% else %}No{% endif %}</td>
+              <td>{{ item.reward }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="surface mb-4">
+    <h2 class="h5 mb-3">Baseline comparison</h2>
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th scope="col">Strategy</th>
+            <th scope="col">Avg. reward</th>
+            <th scope="col">Avg. coverage</th>
+            <th scope="col">Avg. failures</th>
+            <th scope="col">First failure step</th>
+            <th scope="col">Failure rate</th>
+            <th scope="col">Sample order</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in report.comparison_rows %}
+            <tr>
+              <td>{{ row.label }}</td>
+              <td>{{ row.avg_reward }}</td>
+              <td>{{ row.avg_coverage }}</td>
+              <td>{{ row.avg_failures_detected }}</td>
+              <td>{{ row.avg_first_failure_step|default:"-" }}</td>
+              <td>{{ row.failure_detection_rate }}</td>
+              <td>{{ row.sample_selected_actions }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="surface">
+    <h2 class="h5 mb-3">Run configuration</h2>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="text-secondary small">Training episodes</div>
+        <div class="fw-semibold">{{ report.training_episodes }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-secondary small">Evaluation episodes</div>
+        <div class="fw-semibold">{{ report.evaluation_episodes }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-secondary small">Environment seed</div>
+        <div class="fw-semibold">{{ report.seed }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-secondary small">Agent seed</div>
+        <div class="fw-semibold">{{ report.agent_seed }}</div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
