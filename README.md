@@ -1,151 +1,292 @@
-# Automatización de pruebas con aprendizaje por refuerzo
+# RL Test Prioritizer
 
-Este repositorio presenta un prototipo experimental para la priorización de casos de prueba mediante aprendizaje por refuerzo. El objetivo principal es evaluar si un agente basado en Q-learning puede seleccionar, bajo un presupuesto limitado de ejecución, un subconjunto de pruebas que maximice indicadores relevantes para la automatización de pruebas, tales como detección temprana de fallas, cobertura acumulada y eficiencia en el uso del tiempo.
+RL Test Prioritizer es una herramienta para ordenar casos de prueba usando un motor de aprendizaje por refuerzo. El sistema recibe un conjunto de pruebas con información como tiempo estimado, probabilidad histórica de falla, cobertura y prioridad funcional; luego recomienda qué pruebas ejecutar primero cuando el tiempo o el presupuesto de ejecución es limitado.
 
-El proyecto se plantea como una aproximación académica al problema de test case prioritization. En este contexto, cada caso de prueba se modela con atributos observables, entre ellos tiempo estimado de ejecución, probabilidad histórica de falla, ganancia de cobertura y prioridad funcional. A partir de dichos atributos, el entorno simula episodios de ejecución y entrega recompensas al agente según el valor esperado de cada selección.
+El proyecto incluye dos formas de uso:
 
-## Objetivos
+- Una interfaz web en Django para cargar datasets, ejecutar el motor y descargar reportes.
+- Un flujo por línea de comandos para reproducir ejecuciones y generar resultados JSON.
 
-- Implementar un entorno simulado para priorización de pruebas automatizadas.
-- Entrenar un agente de Q-learning tabular para seleccionar pruebas bajo restricciones de presupuesto.
-- Comparar el desempeño del agente contra estrategias base: prioridad funcional, riesgo histórico y selección aleatoria.
-- Registrar métricas cuantitativas que permitan analizar recompensa promedio, cobertura, detección de fallas y eficiencia por presupuesto.
-- Proveer una interfaz web ligera que permita cargar conjuntos de prueba, ejecutar el motor y descargar un reporte de resultados.
+> Nota: este proyecto prioriza casos de prueba a partir de metadatos. No ejecuta automáticamente pruebas reales de Selenium, Playwright, pytest u otros frameworks; funciona como un motor de decisión y simulación.
 
-## Estructura del repositorio
+## Características Principales
+
+- Priorización automática de casos de prueba con un agente Q-learning.
+- Comparación contra estrategias base: prioridad, riesgo histórico y orden aleatorio.
+- Presupuesto configurable de ejecución por episodio.
+- Datasets incluidos para probar el sistema inmediatamente.
+- Carga de datasets personalizados en formato JSON desde la interfaz web.
+- Validación de estructura para archivos cargados desde la web.
+- Reportes descargables con métricas, trazas y orden recomendado.
+- Resultados reproducibles mediante semillas configurables.
+
+## Cómo Funciona
+
+Cada caso de prueba se representa con estos atributos:
+
+- `id`: identificador del caso de prueba.
+- `name`: nombre descriptivo.
+- `estimated_time`: tiempo estimado de ejecución.
+- `failure_probability`: probabilidad histórica o esperada de detectar una falla.
+- `coverage_gain`: aporte estimado de cobertura.
+- `priority`: prioridad funcional.
+
+Durante el entrenamiento, el agente aprende a seleccionar pruebas bajo un presupuesto limitado. La recompensa favorece pruebas con alta probabilidad de falla, buen aporte de cobertura y selección temprana, aplicando una penalización por tiempo estimado.
+
+Al finalizar, el sistema compara el agente contra tres estrategias:
+
+- **Priority baseline**: ejecuta primero las pruebas con mayor prioridad funcional.
+- **Risk baseline**: ejecuta primero las pruebas con mayor probabilidad histórica de falla.
+- **Random baseline**: usa un orden aleatorio reproducible mediante semilla.
+
+## Tecnologías
+
+- Python
+- Django 5
+- Q-learning tabular
+- Django Templates
+- Bootstrap 5
+- JSON para datasets y reportes
+
+La dependencia principal del proyecto está declarada en `requirements.txt`.
+
+## Estructura del Proyecto
 
 ```text
 core/
-  agent.py          Implementación del agente Q-learning.
-  baseline.py       Estrategias base para comparación experimental.
-  environment.py    Entorno de simulación para ejecución de pruebas.
-  evaluator.py      Funciones de evaluación y agregación de métricas.
-  models.py         Modelo de datos para los casos de prueba.
-  trainer.py        Ciclo de entrenamiento del agente.
+  agent.py          Agente Q-learning.
+  baseline.py       Estrategias base de comparación.
+  environment.py    Entorno de simulación.
+  evaluator.py      Evaluación y agregación de métricas.
+  models.py         Modelo de datos TestCase.
+  trainer.py        Ciclo de entrenamiento.
 
 data/
-  sample_tests.json         Conjunto base de casos de prueba.
-  payment_tests.json        Conjunto alternativo de pruebas.
-  large_tests.json          Conjunto ampliado de pruebas.
-  evaluation_results.json   Resultados agregados de la última ejecución.
-  training_history.json     Historial de entrenamiento por episodio.
-
-scripts/
-  run_experiment.py  Punto de entrada de compatibilidad.
+  sample_tests.json         Dataset base.
+  payment_tests.json        Dataset orientado a pagos.
+  large_tests.json          Dataset ampliado.
+  evaluation_results.json   Resultados de referencia.
+  training_history.json     Historial de entrenamiento.
 
 src/
-  run_experiment.py  Punto de entrada principal para ejecutar experimentos.
+  run_experiment.py  Ejecutor principal por línea de comandos.
+
+scripts/
+  run_experiment.py  Wrapper de compatibilidad.
 
 test_prioritizer/
-  settings.py  Configuración principal del proyecto Django.
-  urls.py      Enrutamiento global de la aplicación web.
+  settings.py  Configuración de Django.
+  urls.py      Rutas principales del proyecto.
 
 web/
-  forms.py      Formulario de carga y selección de datasets.
-  services.py   Capa de orquestación entre Django y el motor de aprendizaje por refuerzo.
-  views.py      Vistas para entrada, resultados y descarga de reportes.
-  templates/    Vistas HTML renderizadas con Django Templates.
+  forms.py      Formulario de ejecución.
+  services.py   Validación, ejecución y reportes.
+  views.py      Vistas web.
+  urls.py       Rutas de la aplicación web.
+  templates/    Plantillas HTML.
 
-manage.py         Utilidad de administración de Django.
-requirements.txt  Dependencias mínimas del proyecto.
+manage.py
+requirements.txt
+README.md
 ```
 
-## Metodología
+## Clonar, Ejecutar y Observar el Proyecto
 
-El agente utiliza Q-learning tabular. El estado del entorno se discretiza a partir de variables como pruebas pendientes, pruebas ejecutadas, cobertura acumulada, fallas detectadas, tiempo consumido, pasos ejecutados, presupuesto restante y máscara de pruebas ejecutadas.
-
-En cada episodio, el agente selecciona acciones válidas que representan casos de prueba aún no ejecutados. La función de recompensa favorece pruebas con mayor probabilidad histórica de falla, mayor aporte de cobertura y selección temprana dentro del presupuesto disponible. También incorpora penalización por tiempo estimado de ejecución.
-
-Para la evaluación, el agente entrenado se compara con tres líneas base:
-
-- Baseline por prioridad: ejecuta primero los casos con mayor prioridad funcional.
-- Baseline por riesgo: ejecuta primero los casos con mayor probabilidad histórica de falla.
-- Baseline aleatorio: ejecuta los casos en un orden aleatorio reproducible mediante semilla.
-
-## Ejecución del experimento
-
-Desde la raíz del repositorio, el experimento puede ejecutarse con:
+### 1. Clonar el Repositorio
 
 ```powershell
-py -m src.run_experiment --agent-seed 123 --output-dir data
+git clone https://github.com/Default-php/RL-test-automation.git
+cd RL-test-automation
 ```
 
-Parámetros principales:
+### 2. Crear el Entorno Virtual
 
-- `--data-file`: archivo JSON con los casos de prueba.
-- `--output-dir`: directorio donde se guardan los resultados.
-- `--training-episodes`: número de episodios de entrenamiento.
-- `--evaluation-episodes`: número de episodios de evaluación.
-- `--execution-budget`: cantidad máxima de pruebas por episodio.
-- `--seed`: semilla del entorno y de las líneas base reproducibles.
-- `--agent-seed`: semilla específica del agente Q-learning.
-
-## Interfaz web Django
-
-El proyecto incluye una capa de producto implementada con Django. Esta interfaz permite seleccionar un dataset incluido en `data/`, cargar un archivo JSON externo, validar la estructura del dataset, ejecutar el motor de priorización, visualizar la recomendación de orden de ejecución y comparar los resultados contra las líneas base disponibles.
-
-Instalación de dependencias en Windows PowerShell:
+En Windows PowerShell:
 
 ```powershell
 py -m venv .venv
+.\.venv\Scripts\python -m pip install --upgrade pip
 .\.venv\Scripts\python -m pip install -r requirements.txt
-.\.venv\Scripts\python manage.py runserver
 ```
 
-Ejecución equivalente desde Git Bash:
+En Git Bash:
 
 ```bash
 python -m venv .venv
 source .venv/Scripts/activate
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+```
+
+### 3. Ejecutar la Interfaz Web
+
+En Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python manage.py runserver
+```
+
+En Git Bash, con el entorno activado:
+
+```bash
 python manage.py runserver
 ```
 
-Una vez iniciado el servidor, la aplicación queda disponible en:
+Abre la aplicación en:
 
 ```text
 http://127.0.0.1:8000/
 ```
 
-La interfaz web genera reportes JSON descargables en `outputs/web_reports/`. Este directorio se considera salida de ejecución y no forma parte del código fuente principal.
+Desde la interfaz puedes:
 
-## Resultados experimentales
+1. Seleccionar un dataset incluido.
+2. Subir un archivo JSON propio.
+3. Configurar episodios de entrenamiento y evaluación.
+4. Ajustar el presupuesto de ejecución.
+5. Ejecutar el motor de priorización.
+6. Revisar el orden recomendado y la comparación contra baselines.
+7. Descargar el reporte JSON generado.
 
-La última ejecución registrada utilizó los siguientes parámetros:
+Los reportes creados desde la web se guardan en:
 
-| Parámetro | Valor |
-| --- | ---: |
-| Presupuesto de ejecución | 3 |
-| Semilla del entorno | 42 |
-| Semilla del agente | 123 |
-| Episodios de entrenamiento | 2000 |
-| Episodios de evaluación | 100 |
-
-Resumen de resultados agregados:
-
-| Estrategia | Recompensa promedio | Cobertura promedio | Fallas promedio | Tasa de detección de fallas | Cobertura por presupuesto |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Agente Q-learning | 45.5266 | 0.4811 | 0.88 | 0.69 | 0.1604 |
-| Baseline por prioridad | 45.7700 | 0.4200 | 0.85 | 0.68 | 0.1400 |
-| Baseline por riesgo | 48.6000 | 0.5000 | 0.90 | 0.71 | 0.1667 |
-| Baseline aleatorio | 35.3390 | 0.3935 | 0.65 | 0.56 | 0.1312 |
-
-Los resultados muestran que el agente entrenado supera de forma clara a la estrategia aleatoria y presenta un comportamiento competitivo frente a la línea base por prioridad. En la ejecución registrada, la línea base por riesgo obtiene la mayor recompensa promedio y la mayor tasa de detección de fallas, lo que sugiere que la probabilidad histórica de falla es una variable especialmente relevante en el conjunto de datos utilizado. Este comportamiento también indica un punto de mejora para futuras iteraciones del agente y de la función de recompensa.
-
-## Reproducibilidad
-
-Los archivos generados por la ejecución se almacenan en `data/evaluation_results.json` y `data/training_history.json`. El primero contiene las métricas agregadas de evaluación, mientras que el segundo conserva el historial episodio por episodio del entrenamiento.
-
-Para reproducir la ejecución documentada, se recomienda mantener las mismas semillas y parámetros:
-
-```powershell
-py -m src.run_experiment --agent-seed 123 --output-dir data
+```text
+outputs/web_reports/
 ```
 
-## Consideraciones futuras
+### 4. Ejecutar un Experimento por Consola
 
-- Evaluar el agente con conjuntos de pruebas de mayor escala y mayor variabilidad.
-- Incorporar representaciones de estado más expresivas para capturar dependencias entre casos de prueba.
-- Comparar Q-learning tabular con técnicas de aprendizaje por refuerzo profundo.
-- Ajustar la función de recompensa para balancear de manera más precisa detección temprana, cobertura y costo temporal.
-- Incorporar validación estadística sobre múltiples semillas de entrenamiento y evaluación.
+Ejemplo con el dataset base:
+
+```powershell
+.\.venv\Scripts\python -m src.run_experiment `
+  --data-file data\sample_tests.json `
+  --output-dir outputs `
+  --training-episodes 2000 `
+  --evaluation-episodes 100 `
+  --execution-budget 3 `
+  --seed 42 `
+  --agent-seed 123
+```
+
+En sistemas tipo Unix o Git Bash:
+
+```bash
+python -m src.run_experiment \
+  --data-file data/sample_tests.json \
+  --output-dir outputs \
+  --training-episodes 2000 \
+  --evaluation-episodes 100 \
+  --execution-budget 3 \
+  --seed 42 \
+  --agent-seed 123
+```
+
+### 5. Observar los Resultados
+
+Después de una ejecución por consola, revisa:
+
+```text
+outputs/evaluation_results.json
+outputs/training_history.json
+```
+
+`evaluation_results.json` contiene el resumen comparativo entre el agente y las estrategias base. Incluye métricas como:
+
+- Recompensa promedio.
+- Cobertura promedio.
+- Fallas detectadas.
+- Tasa de detección de fallas.
+- Presupuesto usado.
+- Orden de ejecución de muestra.
+
+`training_history.json` contiene el historial por episodio del entrenamiento, incluyendo recompensa, cobertura, fallas detectadas, presupuesto usado y valor de exploración `epsilon`.
+
+## Formato de Dataset
+
+Un dataset debe ser un arreglo JSON de casos de prueba:
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Login with valid credentials",
+    "estimated_time": 1.2,
+    "failure_probability": 0.25,
+    "coverage_gain": 0.14,
+    "priority": 5
+  }
+]
+```
+
+Reglas principales:
+
+- El archivo debe ser JSON válido.
+- Debe contener al menos un caso de prueba.
+- `estimated_time` debe ser mayor que `0`.
+- `failure_probability` debe estar entre `0` y `1`.
+- `coverage_gain` debe estar entre `0` y `1`.
+- `priority` debe ser un entero mayor que `0`.
+- Los `id` no deben repetirse.
+
+## Parámetros Disponibles en Consola
+
+| Parámetro | Descripción |
+| --- | --- |
+| `--data-file` | Ruta del archivo JSON con casos de prueba. |
+| `--output-dir` | Carpeta donde se guardan los resultados. |
+| `--training-episodes` | Cantidad de episodios de entrenamiento. |
+| `--evaluation-episodes` | Cantidad de episodios de evaluación. |
+| `--execution-budget` | Cantidad máxima de pruebas por episodio. |
+| `--seed` | Semilla del entorno y de las estrategias reproducibles. |
+| `--agent-seed` | Semilla específica del agente Q-learning. |
+
+## Pruebas del Proyecto
+
+Ejecuta las pruebas con:
+
+```powershell
+.\.venv\Scripts\python manage.py test
+```
+
+También puedes verificar la configuración de Django con:
+
+```powershell
+.\.venv\Scripts\python manage.py check
+```
+
+## Archivos Generados
+
+Los directorios `outputs/` y `docs/` se consideran salidas o material auxiliar. No forman parte del flujo principal de código fuente.
+
+Archivos comunes generados:
+
+- `outputs/evaluation_results.json`
+- `outputs/training_history.json`
+- `outputs/web_reports/<report_id>.json`
+
+## Resultados de Referencia
+
+Una ejecución de referencia con `data/sample_tests.json`, presupuesto `3`, semilla de entorno `42`, semilla de agente `123`, `2000` episodios de entrenamiento y `100` episodios de evaluación produjo estos resultados:
+
+| Estrategia | Recompensa promedio | Cobertura promedio | Fallas promedio | Tasa de detección |
+| --- | ---: | ---: | ---: | ---: |
+| Agente Q-learning | 45.5266 | 0.4811 | 0.88 | 0.69 |
+| Baseline por prioridad | 45.7700 | 0.4200 | 0.85 | 0.68 |
+| Baseline por riesgo | 48.6000 | 0.5000 | 0.90 | 0.71 |
+| Baseline aleatorio | 35.3390 | 0.3935 | 0.65 | 0.56 |
+
+Estos valores sirven como referencia inicial. Los resultados pueden variar al cambiar dataset, presupuesto, semillas o número de episodios.
+
+## Posibles Mejoras
+
+- Integrar el priorizador con un runner real de pruebas automatizadas.
+- Agregar ejecución en segundo plano para corridas largas desde la web.
+- Guardar historiales y reportes en base de datos.
+- Ampliar la cobertura de pruebas unitarias del motor de aprendizaje.
+- Evaluar resultados sobre múltiples semillas y datasets.
+- Incorporar cobertura por componente para representar solapamiento entre pruebas.
+
+## Licencia
+
+Este proyecto está disponible bajo la licencia incluida en `LICENSE`.
